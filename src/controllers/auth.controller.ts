@@ -28,7 +28,11 @@ export const login = async (req: Request, res: Response) => {
   const result = await AuthService.loginUser(email, password);
 
   // Cross-site auth cookie
-  const cookieDomain = ".onrender.com"
+  const rawCookieDomain = process.env.COOKIE_DOMAIN;
+  const cookieDomain =
+    rawCookieDomain && rawCookieDomain.replace(/^\./, "") !== "onrender.com"
+      ? rawCookieDomain
+      : undefined;
   res.cookie("carelink_access_token", result.token, {
     httpOnly: true,
     secure: true,
@@ -54,7 +58,11 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 export const logout = async (req: Request, res: Response) => {
 
   // Clear auth cookie
-  const cookieDomain = ".onrender.com"
+  const rawCookieDomain = process.env.COOKIE_DOMAIN;
+  const cookieDomain =
+    rawCookieDomain && rawCookieDomain.replace(/^\./, "") !== "onrender.com"
+      ? rawCookieDomain
+      : undefined;
   res.clearCookie("carelink_access_token", {
     httpOnly: true,
     secure: true,
