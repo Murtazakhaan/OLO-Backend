@@ -14,7 +14,7 @@ export interface AuthRequest extends Request {
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
   let token: string | null = null;
 
-  console.log("✅✅✅✅ COOKIES", req.cookies)
+  console.log("✅✅✅✅ COOKIES", req)
 
   // 🔹 Get token from Authorization header: "Bearer <token>"
   if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
