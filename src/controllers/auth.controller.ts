@@ -29,12 +29,13 @@ export const login = async (req: Request, res: Response) => {
 
   // Cross-site auth cookie
   const isProd = process.env.NODE_ENV === "production";
+  const cookieDomain = isProd ? process.env.COOKIE_DOMAIN : undefined;
   res.cookie("carelink_access_token", result.token, {
-    httpOnly: isProd,
+    httpOnly: true,
     secure: isProd,
-    sameSite: isProd ? "none" :"lax" as "lax" | "none",
-    path: '/',
-    domain: isProd ? 'olo-frontend.onrender.com' : undefined,
+    sameSite: isProd ? "none" : "lax",
+    path: "/",
+    domain: cookieDomain,
   });
 
   return success(res, result, "Login successful");
@@ -55,14 +56,14 @@ export const logout = async (req: Request, res: Response) => {
 
   // Clear auth cookie
  const isProd = process.env.NODE_ENV === "production";
+  const cookieDomain = isProd ? process.env.COOKIE_DOMAIN : undefined;
   res.clearCookie("carelink_access_token", {
-        httpOnly: isProd,
+    httpOnly: true,
     secure: isProd,
-    sameSite: isProd ? "none" :"lax" as "lax" | "none",
-    path: '/',
-    domain: isProd ? 'olo-frontend.onrender.com' : undefined
+    sameSite: isProd ? "none" : "lax",
+    path: "/",
+    domain: cookieDomain
   });
 
   return success(res, {}, "Logged out successfully");
 };
-

@@ -52,11 +52,15 @@ const login = async (req, res) => {
         throw new errors_1.AppError("Email and password are required", 400);
     }
     const result = await AuthService.loginUser(email, password);
-    // If using cookies:
+    // Cross-site auth cookie
+    const isProd = process.env.NODE_ENV === "production";
+    const cookieDomain = isProd ? process.env.COOKIE_DOMAIN : undefined;
     res.cookie("carelink_access_token", result.token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
+        path: "/",
+        domain: cookieDomain,
     });
     return (0, response_1.success)(res, result, "Login successful");
 };
@@ -70,11 +74,15 @@ const getMe = async (req, res) => {
 };
 exports.getMe = getMe;
 const logout = async (req, res) => {
-    // 🔹 Clear cookie if token stored there
+    // Clear auth cookie
+    const isProd = process.env.NODE_ENV === "production";
+    const cookieDomain = isProd ? process.env.COOKIE_DOMAIN : undefined;
     res.clearCookie("carelink_access_token", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
+        path: "/",
+        domain: cookieDomain
     });
     return (0, response_1.success)(res, {}, "Logged out successfully");
 };
