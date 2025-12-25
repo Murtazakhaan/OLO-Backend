@@ -28,17 +28,13 @@ export const login = async (req: Request, res: Response) => {
   const result = await AuthService.loginUser(email, password);
 
   // Cross-site auth cookie
-  const rawCookieDomain = process.env.COOKIE_DOMAIN;
-  const cookieDomain =
-    rawCookieDomain && rawCookieDomain.replace(/^\./, "") !== "onrender.com"
-      ? rawCookieDomain
-      : undefined;
+  const isProd = process.env.NODE_ENV === "production";
   res.cookie("carelink_access_token", result.token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    path: "/",
-    ...(cookieDomain ? { domain: cookieDomain } : {}),
+    httpOnly: isProd,
+    secure: isProd,
+    sameSite: isProd ? "none" :"lax" as "lax" | "none",
+    path: '/',
+    domain: isProd ? 'olo-frontend.onrender.com' : undefined,
   });
 
   return success(res, result, "Login successful");
@@ -58,17 +54,13 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 export const logout = async (req: Request, res: Response) => {
 
   // Clear auth cookie
-  const rawCookieDomain = process.env.COOKIE_DOMAIN;
-  const cookieDomain =
-    rawCookieDomain && rawCookieDomain.replace(/^\./, "") !== "onrender.com"
-      ? rawCookieDomain
-      : undefined;
+ const isProd = process.env.NODE_ENV === "production";
   res.clearCookie("carelink_access_token", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    path: "/",
-    ...(cookieDomain ? { domain: cookieDomain } : {}),
+        httpOnly: isProd,
+    secure: isProd,
+    sameSite: isProd ? "none" :"lax" as "lax" | "none",
+    path: '/',
+    domain: isProd ? 'olo-frontend.onrender.com' : undefined
   });
 
   return success(res, {}, "Logged out successfully");
