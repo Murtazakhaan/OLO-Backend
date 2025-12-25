@@ -9,6 +9,7 @@ const errors_1 = require("../utils/errors");
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key";
 const authenticate = (req, res, next) => {
     let token = null;
+    console.log("✅✅✅✅ COOKIES", req);
     // 🔹 Get token from Authorization header: "Bearer <token>"
     if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
         token = req.headers.authorization.split(" ")[1];
@@ -16,6 +17,9 @@ const authenticate = (req, res, next) => {
     // 🔹 Or from cookie if you set cookie in login controller
     if (!token && req.cookies?.carelink_access_token) {
         token = req.cookies.carelink_access_token;
+    }
+    if (!token && req.cookies?.token) {
+        token = req.cookies.token;
     }
     if (!token) {
         throw new errors_1.AppError("Not authorized, no token provided", 401);
