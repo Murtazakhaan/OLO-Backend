@@ -19,17 +19,20 @@ const app = express();
 app.use(helmet());
 const FRONTEND_ORIGIN = "https://olo-frontend.onrender.com";
 
-const corsOptions: cors.CorsOptions = {
-  origin: FRONTEND_ORIGIN,
-  credentials: true, // allow cookies/authorization headers
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+
+export   const corsOptions = {
+    origin: ["https://olo-frontend.onrender.com", 'http://localhost:3000'],
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    credentials: true,
 };
 
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(morgan("dev"));
+app.set("trust proxy", 1);
 app.use(cookieParser());
+app.use(morgan("dev"));
+
+app.use(express.json());
+ app.disable("x-powered-by");
 
 // Routes
 app.use("/health", healthRouter);
