@@ -11,8 +11,7 @@ exports.trainerStep1Schema = zod_1.z
     fullName: zod_1.z.string().min(2, "Full name is required"),
     email: zod_1.z.string().email("Invalid email address"),
     phone: zod_1.z
-        .string()
-        .regex(/^0\d{9}$/, "Must be a valid AU mobile (e.g. 04XXXXXXXX)"),
+        .string(),
     address: zod_1.z.string().optional(),
 })
     .passthrough();
