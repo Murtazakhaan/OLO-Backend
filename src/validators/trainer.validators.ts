@@ -10,7 +10,7 @@ export const trainerStep1Schema = z
     email: z.string().email("Invalid email address"),
     phone: z
       .string()
-      .regex(/^0\d{9}$/, "Must be a valid AU mobile (e.g. 04XXXXXXXX)"),
+      .min(1, "Phone is required"),
     address: z.string().optional(),
   })
   .passthrough();
