@@ -91,7 +91,12 @@ const sendForgotPasswordCode = async (email) => {
     <p>If you did not request this change, please ignore this email.</p>
     <p>Thanks,<br/>The CareLink Team</p>
   `;
-    await (0, email_1.sendEmail)(email, subject, message);
+    try {
+        await (0, email_1.sendEmail)(email, subject, message);
+    }
+    catch (err) {
+        console.error("Failed to send forgot password email", err);
+    }
 };
 exports.sendForgotPasswordCode = sendForgotPasswordCode;
 const verifyResetCode = async (email, code) => {
