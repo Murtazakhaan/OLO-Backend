@@ -21,7 +21,7 @@ const FRONTEND_ORIGIN = "https://olo-frontend.onrender.com";
 
 
 export   const corsOptions = {
-    origin: ["https://olo-frontend.onrender.com", "https://itsolo.com.au/", 'http://localhost:3000'],
+    origin: ["https://olo-frontend.onrender.com", "https://itsolo.com.au", 'http://localhost:3000'],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
 };
