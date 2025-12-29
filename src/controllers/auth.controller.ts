@@ -4,6 +4,42 @@ import { success } from "../utils/response";
 import { AppError, AuthError } from "../utils/errors";
 import { AuthRequest } from "../middleware/auth";
 
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new AppError("Email is required", 400);
+  }
+
+  await AuthService.sendForgotPasswordCode(email);
+
+  return success(res, {}, "If an account exists for this email, a verification code has been sent.");
+};
+
+export const verifyResetCode = async (req: Request, res: Response) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    throw new AppError("Email and code are required", 400);
+  }
+
+  await AuthService.verifyResetCode(email, code);
+
+  return success(res, {}, "Verification code is valid");
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  const { email, code, password } = req.body;
+
+  if (!email || !code || !password) {
+    throw new AppError("Email, code and password are required", 400);
+  }
+
+  const result = await AuthService.resetPasswordWithCode(email, code, password);
+
+  return success(res, result, "Password reset successfully");
+};
+
 export const setPassword = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 

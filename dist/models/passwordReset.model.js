@@ -33,16 +33,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
-const AuthController = __importStar(require("../controllers/auth.controller"));
-const catchAsync_1 = require("../utils/catchAsync");
-const auth_1 = require("../middleware/auth");
-const router = (0, express_1.Router)();
-router.post("/forgot-password", (0, catchAsync_1.catchAsync)(AuthController.forgotPassword));
-router.post("/verify-code", (0, catchAsync_1.catchAsync)(AuthController.verifyResetCode));
-router.post("/reset-password", (0, catchAsync_1.catchAsync)(AuthController.resetPassword));
-router.post("/set-password", (0, catchAsync_1.catchAsync)(AuthController.setPassword));
-router.post("/login", (0, catchAsync_1.catchAsync)(AuthController.login));
-router.get("/me", auth_1.authenticate, AuthController.getMe);
-router.post("/logout", auth_1.authenticate, AuthController.logout);
-exports.default = router;
+exports.PasswordReset = void 0;
+const mongoose_1 = __importStar(require("mongoose"));
+const PasswordResetSchema = new mongoose_1.Schema({
+    email: { type: String, required: true, index: true },
+    code: { type: String, required: true },
+    expiresAt: { type: Date, required: true },
+    verified: { type: Boolean, default: false },
+}, { timestamps: true });
+PasswordResetSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+exports.PasswordReset = mongoose_1.default.model("PasswordReset", PasswordResetSchema);
