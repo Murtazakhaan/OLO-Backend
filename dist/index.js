@@ -20,7 +20,7 @@ const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
 const FRONTEND_ORIGIN = "https://olo-frontend.onrender.com";
 exports.corsOptions = {
-    origin: ["https://olo-frontend.onrender.com", "https://itsolo.com.au/", 'http://localhost:3000'],
+    origin: ["https://olo-frontend.onrender.com", "https://itsolo.com.au", 'http://localhost:3000'],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
 };
