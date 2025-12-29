@@ -33,10 +33,37 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.getMe = exports.login = exports.setPassword = void 0;
+exports.logout = exports.getMe = exports.login = exports.setPassword = exports.resetPassword = exports.verifyResetCode = exports.forgotPassword = void 0;
 const AuthService = __importStar(require("../services/auth.service"));
 const response_1 = require("../utils/response");
 const errors_1 = require("../utils/errors");
+const forgotPassword = async (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        throw new errors_1.AppError("Email is required", 400);
+    }
+    await AuthService.sendForgotPasswordCode(email);
+    return (0, response_1.success)(res, {}, "If an account exists for this email, a verification code has been sent.");
+};
+exports.forgotPassword = forgotPassword;
+const verifyResetCode = async (req, res) => {
+    const { email, code } = req.body;
+    if (!email || !code) {
+        throw new errors_1.AppError("Email and code are required", 400);
+    }
+    await AuthService.verifyResetCode(email, code);
+    return (0, response_1.success)(res, {}, "Verification code is valid");
+};
+exports.verifyResetCode = verifyResetCode;
+const resetPassword = async (req, res) => {
+    const { email, code, password } = req.body;
+    if (!email || !code || !password) {
+        throw new errors_1.AppError("Email, code and password are required", 400);
+    }
+    const result = await AuthService.resetPasswordWithCode(email, code, password);
+    return (0, response_1.success)(res, result, "Password reset successfully");
+};
+exports.resetPassword = resetPassword;
 const setPassword = async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {

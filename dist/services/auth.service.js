@@ -3,13 +3,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserById = exports.loginUser = exports.setPasswordForUser = void 0;
+exports.getUserById = exports.resetPasswordWithCode = exports.verifyResetCode = exports.sendForgotPasswordCode = exports.loginUser = exports.setPasswordForUser = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const errors_1 = require("../utils/errors");
 const user_model_1 = require("../models/user.model");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const participant_model_1 = require("../models/participant.model");
 const trainer_model_1 = require("../models/trainer.model");
+const passwordReset_model_1 = require("../models/passwordReset.model");
+const email_1 = require("../utils/email");
+const generateVerificationCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+const CODE_EXPIRATION_MINUTES = 10;
+const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key";
+const JWT_EXPIRES_IN = "7d"; // adjust as needed
+const buildExpiryDate = () => new Date(Date.now() + CODE_EXPIRATION_MINUTES * 60 * 1000);
 const setPasswordForUser = async (email, password) => {
     const user = await user_model_1.User.findOne({ email });
     if (!user)
@@ -30,8 +37,6 @@ const setPasswordForUser = async (email, password) => {
     };
 };
 exports.setPasswordForUser = setPasswordForUser;
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key";
-const JWT_EXPIRES_IN = "7d"; // adjust as needed
 const loginUser = async (email, password) => {
     const user = await user_model_1.User.findOne({ email });
     if (!user)
@@ -68,6 +73,65 @@ const loginUser = async (email, password) => {
     };
 };
 exports.loginUser = loginUser;
+const sendForgotPasswordCode = async (email) => {
+    const user = await user_model_1.User.findOne({ email });
+    if (!user) {
+        return;
+    }
+    const code = generateVerificationCode();
+    const expiresAt = buildExpiryDate();
+    await passwordReset_model_1.PasswordReset.deleteMany({ email });
+    await passwordReset_model_1.PasswordReset.create({ email, code, expiresAt });
+    const subject = "Your CareLink password reset code";
+    const message = `
+    <p>Hello,</p>
+    <p>We received a request to reset the password for your CareLink account.</p>
+    <p><strong>Your verification code is: ${code}</strong></p>
+    <p>This code will expire in ${CODE_EXPIRATION_MINUTES} minutes.</p>
+    <p>If you did not request this change, please ignore this email.</p>
+    <p>Thanks,<br/>The CareLink Team</p>
+  `;
+    await (0, email_1.sendEmail)(email, subject, message);
+};
+exports.sendForgotPasswordCode = sendForgotPasswordCode;
+const verifyResetCode = async (email, code) => {
+    const record = await passwordReset_model_1.PasswordReset.findOne({ email, code });
+    if (!record) {
+        throw new errors_1.AuthError("Invalid verification code.");
+    }
+    if (record.expiresAt.getTime() < Date.now()) {
+        throw new errors_1.AuthError("Verification code has expired.");
+    }
+    if (!record.verified) {
+        record.verified = true;
+        await record.save();
+    }
+    return true;
+};
+exports.verifyResetCode = verifyResetCode;
+const resetPasswordWithCode = async (email, code, password) => {
+    const record = await passwordReset_model_1.PasswordReset.findOne({ email, code });
+    if (!record) {
+        throw new errors_1.AuthError("Invalid verification code.");
+    }
+    if (record.expiresAt.getTime() < Date.now()) {
+        throw new errors_1.AuthError("Verification code has expired.");
+    }
+    const user = await user_model_1.User.findOne({ email });
+    if (!user)
+        throw new errors_1.NotFoundError("User");
+    const salt = await bcryptjs_1.default.genSalt(10);
+    user.password = await bcryptjs_1.default.hash(password, salt);
+    await user.save();
+    await passwordReset_model_1.PasswordReset.deleteMany({ email });
+    return {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+    };
+};
+exports.resetPasswordWithCode = resetPasswordWithCode;
 const getUserById = async (userId) => {
     const user = await user_model_1.User.findById(userId).select("_id email role status createdAt updatedAt");
     if (!user)

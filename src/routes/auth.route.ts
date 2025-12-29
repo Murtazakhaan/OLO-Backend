@@ -1,10 +1,24 @@
 import { Router } from "express";
 import * as AuthController from "../controllers/auth.controller";
 import { catchAsync } from "../utils/catchAsync";
-import { upload } from "../middleware/upload";
 import { authenticate } from "../middleware/auth";
 
 const router = Router();
+
+router.post(
+  "/forgot-password",
+  catchAsync(AuthController.forgotPassword)
+);
+
+router.post(
+  "/verify-code",
+  catchAsync(AuthController.verifyResetCode)
+);
+
+router.post(
+  "/reset-password",
+  catchAsync(AuthController.resetPassword)
+);
 
 router.post(
   "/set-password",
