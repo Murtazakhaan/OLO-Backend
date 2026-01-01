@@ -23,6 +23,13 @@ router.post("/request", authenticate, catchAsync(Ctrl.createShiftRequest));
 router.get("/admin/list", authenticate, catchAsync(Ctrl.adminList));
 
 /**
+ * Admin: Create + assign shift directly (no participant request)
+ * POST /api/shifts/admin/create
+ * Body: { participantId, trainerId, service, start, end, notes? }
+ */
+router.post("/admin/create", authenticate, catchAsync(Ctrl.createAndAssignDirect));
+
+/**
  * Admin: Approve + assign shift to trainer
  * POST /api/shifts/admin/approve
  * Body: { requestId, trainerId }

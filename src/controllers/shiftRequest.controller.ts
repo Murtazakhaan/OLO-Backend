@@ -84,6 +84,32 @@ export const approveAndAssign = async (req: AuthRequest, res: Response) => {
 };
 
 /**
+ * POST /api/admin/shift-requests/create
+ * Admin directly creates + assigns a shift (no participant request needed)
+ * Body: { participantId, trainerId, service, start, end, notes? }
+ */
+export const createAndAssignDirect = async (req: AuthRequest, res: Response) => {
+  if (req.user?.role !== "ADMIN") {
+    throw new AppError("Forbidden", 403);
+  }
+
+  const { participantId, trainerId, service, start, end, notes } = req.body;
+  const adminUserId = req.user.userId;
+
+  const created = await ShiftRequestService.adminCreateAndAssignShift({
+    participantId,
+    trainerId,
+    service,
+    start,
+    end,
+    notes,
+    adminUserId,
+  });
+
+  return success(res, created, "Shift created and assigned to trainer");
+};
+
+/**
  * POST /api/admin/shift-requests/decline
  * Body: { requestId, reason? }
  */

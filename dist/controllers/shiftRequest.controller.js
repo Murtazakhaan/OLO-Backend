@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.adminDashboardSummary = exports.trainerDashboardSummary = exports.listPastShiftsWithTimesheets = exports.clockOutShiftAsTrainerController = exports.clockInShiftAsTrainer = exports.listMine = exports.listTrainerMine = exports.listParticipantMine = exports.decline = exports.approveAndAssign = exports.adminList = exports.createShiftRequest = void 0;
+exports.adminDashboardSummary = exports.trainerDashboardSummary = exports.listPastShiftsWithTimesheets = exports.clockOutShiftAsTrainerController = exports.clockInShiftAsTrainer = exports.listMine = exports.listTrainerMine = exports.listParticipantMine = exports.decline = exports.createAndAssignDirect = exports.approveAndAssign = exports.adminList = exports.createShiftRequest = void 0;
 const response_1 = require("../utils/response");
 const ShiftRequestService = __importStar(require("../services/shiftRequest.service"));
 const errors_1 = require("../utils/errors");
@@ -103,6 +103,29 @@ const approveAndAssign = async (req, res) => {
     return (0, response_1.success)(res, updated, "Shift request approved and assigned");
 };
 exports.approveAndAssign = approveAndAssign;
+/**
+ * POST /api/admin/shift-requests/create
+ * Admin directly creates + assigns a shift (no participant request needed)
+ * Body: { participantId, trainerId, service, start, end, notes? }
+ */
+const createAndAssignDirect = async (req, res) => {
+    if (req.user?.role !== "ADMIN") {
+        throw new errors_1.AppError("Forbidden", 403);
+    }
+    const { participantId, trainerId, service, start, end, notes } = req.body;
+    const adminUserId = req.user.userId;
+    const created = await ShiftRequestService.adminCreateAndAssignShift({
+        participantId,
+        trainerId,
+        service,
+        start,
+        end,
+        notes,
+        adminUserId,
+    });
+    return (0, response_1.success)(res, created, "Shift created and assigned to trainer");
+};
+exports.createAndAssignDirect = createAndAssignDirect;
 /**
  * POST /api/admin/shift-requests/decline
  * Body: { requestId, reason? }
