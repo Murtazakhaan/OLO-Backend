@@ -66,6 +66,77 @@ const ensureParticipantOwnership = async (
   return participant;
 };
 
+type AssignmentEmailMode = "APPROVAL" | "DIRECT_CREATE";
+
+const sendAssignmentEmails = async (
+  shiftRequest: Pick<IShiftRequest, "service" | "start" | "end">,
+  trainerUser: { email: string; fullName?: string },
+  participant: { fullName?: string; email?: string },
+  mode: AssignmentEmailMode
+) => {
+  try {
+    const startTime = shiftRequest.start ? new Date(shiftRequest.start) : null;
+    const endTime = shiftRequest.end ? new Date(shiftRequest.end) : null;
+
+    const shiftDate = startTime
+      ? format(startTime, "EEEE, MMM d yyyy")
+      : "Scheduled date TBD";
+
+    const start = startTime ? format(startTime, "hh:mm a") : "";
+    const end = endTime ? format(endTime, "hh:mm a") : "";
+
+    const shiftInfo = `
+      <p><b>Service:</b> ${shiftRequest.service || "N/A"}</p>
+      <p><b>Date:</b> ${shiftDate}</p>
+      ${start && end ? `<p><b>Time:</b> ${start} – ${end}</p>` : ""}
+    `;
+
+    const participantName = participant.fullName || "Participant";
+    const trainerName = trainerUser.fullName || "Trainer";
+
+    if (trainerUser.email) {
+      await sendEmail(
+        trainerUser.email,
+        "New Shift Assigned 📅",
+        `
+          <p>Hello ${trainerName},</p>
+          <p>You’ve been <b>assigned</b> to a new participant shift!</p>
+          ${shiftInfo}
+          <p>Participant: <b>${participantName}</b></p>
+          <p>Please review full details in your CareLink dashboard.</p>
+          <p>Best regards,<br/>CareLink Team</p>
+        `
+      );
+    }
+
+    const participantSubject =
+      mode === "DIRECT_CREATE"
+        ? "A New Shift Has Been Scheduled ✅"
+        : "Your Shift Request Has Been Approved ✅";
+
+    const participantIntro =
+      mode === "DIRECT_CREATE"
+        ? `A shift has been <b>scheduled</b> for you with trainer <b>${trainerName}</b>.`
+        : `Your shift request has been <b>approved</b> and assigned to trainer <b>${trainerName}</b>.`;
+
+    if (participant.email) {
+      await sendEmail(
+        participant.email,
+        participantSubject,
+        `
+          <p>Hello ${participantName},</p>
+          <p>${participantIntro}</p>
+          ${shiftInfo}
+          <p>Thank you for using CareLink!</p>
+          <p>Best regards,<br/>CareLink Team</p>
+        `
+      );
+    }
+  } catch (err) {
+    console.error("❌ Failed to send assignment notification emails:", err);
+  }
+};
+
 export const createShiftRequest = async (
   payload: CreateShiftRequestInput,
   role?: string
@@ -325,57 +396,97 @@ export const approveAndAssign = async ({
 
   await reqDoc.save();
 
-  // ✅ Email notifications
-  try {
-    const startTime = reqDoc.start ? new Date(reqDoc.start) : null;
-    const endTime = reqDoc.end ? new Date(reqDoc.end) : null;
-
-    const shiftDate = startTime
-      ? format(startTime, "EEEE, MMM d yyyy")
-      : "Scheduled date TBD";
-
-    const start = startTime ? format(startTime, "hh:mm a") : "";
-    const end = endTime ? format(endTime, "hh:mm a") : "";
-
-    const shiftInfo = `
-      <p><b>Service:</b> ${reqDoc.service || "N/A"}</p>
-      <p><b>Date:</b> ${shiftDate}</p>
-      ${start && end ? `<p><b>Time:</b> ${start} – ${end}</p>` : ""}
-    `;
-
-    // ---- Trainer email ----
-    await sendEmail(
-      trainerUser.email,
-      "New Shift Assigned 📅",
-      `
-        <p>Hello ${trainerUser.fullName || "Trainer"},</p>
-        <p>You’ve been <b>assigned</b> to a new participant shift!</p>
-        ${shiftInfo}
-        <p>Participant: <b>${participant.fullName}</b></p>
-        <p>Please review full details in your CareLink dashboard.</p>
-        <p>Best regards,<br/>CareLink Team</p>
-      `
-    );
-
-    // ---- Participant email ----
-    await sendEmail(
-      participant.email,
-      "Your Shift Request Has Been Approved ✅",
-      `
-        <p>Hello ${participant.fullName || "Participant"},</p>
-        <p>Your shift request has been <b>approved</b> and assigned to trainer <b>${
-          trainerUser.fullName || "your trainer"
-        }</b>.</p>
-        ${shiftInfo}
-        <p>Thank you for using CareLink!</p>
-        <p>Best regards,<br/>CareLink Team</p>
-      `
-    );
-  } catch (err) {
-    console.error("❌ Failed to send notification emails:", err);
-  }
+  await sendAssignmentEmails(
+    reqDoc,
+    { email: trainerUser.email, fullName: trainerUser.fullName },
+    { fullName: participant.fullName, email: participant.email },
+    "APPROVAL"
+  );
 
   return reqDoc;
+};
+
+export type AdminCreateShiftInput = {
+  participantId: string;
+  trainerId: string;
+  service: string;
+  start: string | Date;
+  end: string | Date;
+  notes?: string;
+  adminUserId: string;
+};
+
+export const adminCreateAndAssignShift = async ({
+  participantId,
+  trainerId,
+  service,
+  start,
+  end,
+  notes,
+  adminUserId,
+}: AdminCreateShiftInput) => {
+  if (!mongoose.isValidObjectId(participantId))
+    throw new AppError("Invalid participantId", 400);
+  if (!mongoose.isValidObjectId(trainerId))
+    throw new AppError("Invalid trainerId", 400);
+  if (!mongoose.isValidObjectId(adminUserId))
+    throw new AppError("Invalid adminUserId", 400);
+
+  const startDt = new Date(start);
+  const endDt = new Date(end);
+  validateRequestWindow(startDt, endDt);
+
+  // Ensure participant exists (and allow admin to act on behalf)
+  await ensureParticipantOwnership(participantId, adminUserId, "ADMIN");
+
+  // Trainer eligibility mirrors approval flow
+  const trainer = await Trainer.findById(trainerId).populate(
+    "userId",
+    "email status role fullName"
+  );
+  if (!trainer) throw new NotFoundError("Trainer");
+
+  const trainerUser = trainer.userId as any as {
+    email: string;
+    status: string;
+    role: string;
+    fullName?: string;
+  };
+
+  if (
+    trainerUser?.role !== "TRAINER" ||
+    trainerUser?.status === "BLOCKED" ||
+    trainer.status === "PENDING"
+  ) {
+    throw new AppError("Trainer is not eligible for assignment", 400);
+  }
+
+  const participant = await Participant.findOne({
+    userId: participantId,
+  });
+  if (!participant) throw new NotFoundError("Participant");
+
+  const created = await ShiftRequest.create({
+    participantId: new mongoose.Types.ObjectId(participantId),
+    requestedBy: new mongoose.Types.ObjectId(adminUserId),
+    service,
+    start: startDt,
+    end: endDt,
+    notes,
+    preferredTrainerIds: [],
+    status: "APPROVED",
+    assignedTrainerId: trainer._id,
+    adminComment: "Created directly by admin",
+  });
+
+  await sendAssignmentEmails(
+    created,
+    { email: trainerUser.email, fullName: trainerUser.fullName },
+    { fullName: participant.fullName, email: participant.email },
+    "DIRECT_CREATE"
+  );
+
+  return created;
 };
 
 export const decline = async (
