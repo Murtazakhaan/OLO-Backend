@@ -1,44 +1,62 @@
 import nodemailer from "nodemailer";
+// Mailtrap SDK is used to hit the send.api.mailtrap.io endpoint.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { MailtrapClient } = require("mailtrap");
 
-// Default Mailtrap configuration (token provided for testing).
 const MAILTRAP_TOKEN =
   process.env.MAILTRAP_TOKEN || "260fdef4ed451e4b8a2037ebf7e3b562";
-const DEFAULT_MAILTRAP_CONFIG = {
-  host: "live.smtp.mailtrap.io",
-  port: 587,
-  auth: { user: "api", pass: MAILTRAP_TOKEN },
-};
+const MAILTRAP_ENDPOINT = "https://send.api.mailtrap.io";
 
-// Support both SMTP_* and EMAIL_* environment naming, falling back to Mailtrap.
-const smtpHost =
-  process.env.SMTP_HOST || process.env.EMAIL_HOST || DEFAULT_MAILTRAP_CONFIG.host;
-const smtpPort =
-  Number(process.env.SMTP_PORT || process.env.EMAIL_PORT) || DEFAULT_MAILTRAP_CONFIG.port;
-const smtpUser =
-  process.env.SMTP_USER || process.env.EMAIL_USER || DEFAULT_MAILTRAP_CONFIG.auth.user;
-const smtpPass =
-  process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || DEFAULT_MAILTRAP_CONFIG.auth.pass;
+// Support both SMTP_* and EMAIL_* environment naming for optional overrides.
+const smtpHost = process.env.SMTP_HOST || process.env.EMAIL_HOST;
+const smtpPort = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT) || 587;
+const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
+const smtpPass = process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD;
 
-// Prefer explicit FROM; fall back to a sensible default rather than the auth user.
-const fromAddress =
+const fromEmail =
   process.env.SMTP_FROM ||
   process.env.EMAIL_FROM ||
   process.env.MAIL_FROM ||
   "support@mailtrap.io";
+const fromName = process.env.MAIL_FROM_NAME || "CareLink Support";
 
-const transporter = nodemailer.createTransport({
-  host: smtpHost,
-  port: smtpPort,
-  secure: smtpPort === 465, // common TLS port
-  auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
-});
+const mailtrapClient =
+  MAILTRAP_TOKEN && MailtrapClient
+    ? new MailtrapClient({ token: MAILTRAP_TOKEN, endpoint: MAILTRAP_ENDPOINT })
+    : null;
+
+const transporter =
+  smtpHost || smtpUser || smtpPass
+    ? nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465, // common TLS port
+        auth:
+          smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
+      })
+    : null;
 
 export const sendEmail = async (to: string, subject: string, html: string) => {
+  if (mailtrapClient) {
+    await mailtrapClient.send({
+      from: { email: fromEmail, name: fromName },
+      to: [{ email: to }],
+      subject,
+      html,
+    });
+    console.log("EMAIL SENT VIA MAILTRAP TO", to);
+    return;
+  }
+
+  if (!transporter) {
+    throw new Error("Email transport is not configured.");
+  }
+
   await transporter.sendMail({
-    from: `"CareLink Support" <${fromAddress}>`,
+    from: `"${fromName}" <${fromEmail}>`,
     to,
     subject,
     html,
   });
-  console.log("EMAIL SENT TO", to);
+  console.log("EMAIL SENT VIA SMTP TO", to);
 };
