@@ -15,7 +15,7 @@ const fromAddress = process.env.SMTP_FROM || process.env.EMAIL_FROM || smtpUser 
 const transporter = nodemailer_1.default.createTransport({
     host: smtpHost,
     port: smtpPort,
-    secure: smtpPort === 465,
+    secure: smtpPort === 465, // common TLS port
     auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
 });
 const sendEmail = async (to, subject, html) => {
