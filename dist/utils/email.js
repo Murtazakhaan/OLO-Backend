@@ -4,27 +4,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendEmail = void 0;
-const nodemailer_1 = __importDefault(require("nodemailer"));
-// Support both SMTP_* and EMAIL_* environment naming.
-const smtpHost = process.env.SMTP_HOST || process.env.EMAIL_HOST;
-const smtpPort = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT) || 587;
-const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
-const smtpPass = process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD;
-// Prefer explicit FROM, fall back to the authenticated user.
-const fromAddress = process.env.SMTP_FROM || process.env.EMAIL_FROM || smtpUser || "";
-const transporter = nodemailer_1.default.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: smtpPort === 465, // common TLS port
-    auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
+const mailtrap_1 = require("mailtrap");
+const MAILTRAP_TOKEN = process.env.MAILTRAP_TOKEN || "260fdef4ed451e4b8a2037ebf7e3b562";
+const MAILTRAP_ENDPOINT = "https://send.api.mailtrap.io";
+const fromEmail = process.env.SMTP_FROM ||
+    process.env.EMAIL_FROM ||
+    process.env.MAIL_FROM ||
+    "support@mailtrap.io";
+const fromName = process.env.MAIL_FROM_NAME || "CareLink Support";
+const mailtrapClient = new mailtrap_1.MailtrapClient({
+    token: MAILTRAP_TOKEN,
+    endpoint: MAILTRAP_ENDPOINT,
 });
 const sendEmail = async (to, subject, html) => {
-    await transporter.sendMail({
-        from: `"CareLink Support" <${fromAddress}>`,
-        to,
+    await mailtrapClient.send({
+        from: { email: fromEmail, name: fromName },
+        to: [{ email: to }],
         subject,
         html,
     });
-    console.log("EMAIL SENT TO", to);
+    console.log("EMAIL SENT VIA MAILTRAP TO", to);
 };
 exports.sendEmail = sendEmail;
