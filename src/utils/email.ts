@@ -1,7 +1,14 @@
 import nodemailer from "nodemailer";
-// Mailtrap SDK is used to hit the send.api.mailtrap.io endpoint.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { MailtrapClient } = require("mailtrap");
+// Mailtrap SDK is optional—loaded dynamically to allow environments where the
+// dependency is installed manually.
+// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-var-requires
+let MailtrapClient: any;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  MailtrapClient = require("mailtrap").MailtrapClient;
+} catch {
+  MailtrapClient = null;
+}
 
 const MAILTRAP_TOKEN =
   process.env.MAILTRAP_TOKEN || "260fdef4ed451e4b8a2037ebf7e3b562";

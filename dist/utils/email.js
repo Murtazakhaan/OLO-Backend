@@ -5,9 +5,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendEmail = void 0;
 const nodemailer_1 = __importDefault(require("nodemailer"));
-// Mailtrap SDK is used to hit the send.api.mailtrap.io endpoint.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { MailtrapClient } = require("mailtrap");
+// Mailtrap SDK is optional—loaded dynamically to allow environments where the
+// dependency is installed manually.
+// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-var-requires
+let MailtrapClient;
+try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    MailtrapClient = require("mailtrap").MailtrapClient;
+}
+catch (_a) {
+    MailtrapClient = null;
+}
 const MAILTRAP_TOKEN = process.env.MAILTRAP_TOKEN || "260fdef4ed451e4b8a2037ebf7e3b562";
 const MAILTRAP_ENDPOINT = "https://send.api.mailtrap.io";
 // Support both SMTP_* and EMAIL_* environment naming for optional overrides.
