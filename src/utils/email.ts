@@ -1,8 +1,4 @@
-import { MailtrapClient } from "mailtrap";
-
-const MAILTRAP_TOKEN =
-  process.env.MAILTRAP_TOKEN || "260fdef4ed451e4b8a2037ebf7e3b562";
-const MAILTRAP_ENDPOINT = "https://send.api.mailtrap.io";
+import nodemailer from "nodemailer";
 
 const fromEmail =
   process.env.SMTP_FROM ||
@@ -11,17 +7,34 @@ const fromEmail =
   "support@mailtrap.io";
 const fromName = process.env.MAIL_FROM_NAME || "CareLink Support";
 
-const mailtrapClient = new MailtrapClient({
-  token: MAILTRAP_TOKEN,
-  endpoint: MAILTRAP_ENDPOINT,
+const smtpHost = process.env.MAILTRAP_SMTP_HOST || process.env.EMAIL_HOST;
+const smtpPortRaw = process.env.MAILTRAP_SMTP_PORT || process.env.EMAIL_PORT || "587";
+const smtpUser = process.env.MAILTRAP_SMTP_USER || process.env.EMAIL_USER;
+const smtpPass = process.env.MAILTRAP_SMTP_PASS || process.env.EMAIL_PASSWORD;
+
+if (!smtpHost || !smtpUser || !smtpPass) {
+  throw new Error("SMTP credentials are required to send email.");
+}
+
+const smtpPort = Number(smtpPortRaw);
+const smtpSecure = smtpPort === 465;
+
+const transporter = nodemailer.createTransport({
+  host: smtpHost,
+  port: smtpPort,
+  secure: smtpSecure,
+  auth: {
+    user: smtpUser,
+    pass: smtpPass,
+  },
 });
 
 export const sendEmail = async (to: string, subject: string, html: string) => {
-  await mailtrapClient.send({
-    from: { email: fromEmail, name: fromName },
-    to: [{ email: to }],
+  await transporter.sendMail({
+    from: { name: fromName, address: fromEmail },
+    to,
     subject,
     html,
   });
-  console.log("EMAIL SENT VIA MAILTRAP TO", to);
+  console.log("EMAIL SENT VIA SMTP TO", to);
 };
