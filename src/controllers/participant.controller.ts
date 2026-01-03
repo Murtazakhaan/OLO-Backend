@@ -40,7 +40,7 @@ export const getParticipant = async (req: any, res: Response) => {
 
 
 export const getAllParticipantsController = async (
-  req: Request,
+  req: any, // TODO: replace with typed Request<...> when query schema is defined
   res: Response
 ) => {
   const { page, limit, q, email, status } = req.query;

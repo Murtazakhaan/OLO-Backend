@@ -10,10 +10,10 @@ if (!fs.existsSync(uploadDir)) {
 
 // Multer config
 const storage = multer.diskStorage({
-  destination: function (_req, _file, cb) {
+  destination: function (_req: any, _file: any, cb: any) { // TODO: add proper multer types
     cb(null, uploadDir);
   },
-  filename: function (_req, file, cb) {
+  filename: function (_req: any, file: any, cb: any) { // TODO: add proper multer types
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(
       null,

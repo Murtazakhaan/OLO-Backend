@@ -102,11 +102,11 @@ export const createPdfBuffer = (data: any): Promise<Buffer> =>
 
       // Meta block (if provided)
       const meta = safe<any>(data.meta, {});
-      const leftMeta = [
+      const leftMeta: Array<[string, any]> = [
         ["Timesheet ID", meta.timesheetId],
         ["Status", meta.status],
       ];
-      const rightMeta = [
+      const rightMeta: Array<[string, any]> = [
         ["Trainer", meta.trainerName],
         ["Email", meta.trainerEmail],
         ["Phone", meta.trainerPhone],

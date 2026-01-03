@@ -23,7 +23,7 @@ export const upsertTrainer = async (req: any, res: Response) => {
     req.body.documents = {};
 
     for (const [key, files] of Object.entries(req.files)) {
-      const file = (files as Express.Multer.File[])[0];
+      const file = (files as any[])[0]; // TODO: type files with Express.Multer.File[]
 
       if (!ACCEPTED_TYPES.includes(file.mimetype)) {
         throw new AppError(
@@ -94,7 +94,7 @@ export const upsertTrainer = async (req: any, res: Response) => {
       travelAreas: z.array(z.string().trim().min(1)).optional(),
       specialisations: z.array(z.string().trim().min(1)).optional(),
       availability: z.record(z.string(), z.array(Slot)).optional(),
-      documents: z.record(z.any()).optional(),
+      documents: z.record(z.any(), z.any()).optional(), // TODO: tighten document schema
       signup: z.literal("completed"),
     });
 
@@ -157,7 +157,7 @@ export const getTrainer = async (req: any, res: Response) => {
 };
 
 export const getAllTrainers = async (
-  req: Request,
+  req: any, // TODO: replace with typed Request<...> when query schema is defined
   res: Response
 ) => {
   const { page, limit, q, email, status } = req.query;
@@ -175,7 +175,7 @@ export const getAllTrainers = async (
 
 
 
-export const updateTrainerStatus = async (req: Request, res: Response) => {
+export const updateTrainerStatus = async (req: any, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
 

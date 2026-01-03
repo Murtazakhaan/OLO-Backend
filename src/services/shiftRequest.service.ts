@@ -8,7 +8,7 @@ import { sendEmail } from "../utils/email";
 import { format } from "date-fns";
 import { Shift } from "../models/shift.model";
 import { Timesheet } from "../models/timesheet.model";
-import { endOfWeekUTC, startOfWeekUTC } from "../utils/time-money";
+// TODO: use shared time utils instead of local helpers below
 
 /**
  * Business validation for a new Shift Request
@@ -282,7 +282,7 @@ export const listForAdmin = async (params: ListAdminShiftRequestsParams) => {
     {
       $facet: {
         data: [
-          { $sort: { [sortField]: sortDir } },
+          { $sort: { [sortField]: sortDir as 1 | -1 } }, // TODO: tighten sort typing
           { $skip: (page - 1) * limit },
           { $limit: limit },
           {
@@ -613,7 +613,7 @@ export const listForParticipant = async (
     {
       $facet: {
         data: [
-          { $sort: { [field]: dir } },
+          { $sort: { [field]: dir as 1 | -1 } }, // TODO: tighten sort typing
           { $skip: (page - 1) * limit },
           { $limit: limit },
           {
@@ -729,7 +729,7 @@ export const listForTrainer = async (
     {
       $facet: {
         data: [
-          { $sort: { [field]: dir } },
+          { $sort: { [field]: dir as 1 | -1 } }, // TODO: tighten sort typing
           { $skip: (page - 1) * limit },
           { $limit: limit },
           {
@@ -1107,6 +1107,9 @@ export const upsertTimesheetForShift = async ({
 };
 
 
+// TODO: replace with a proper interface for listPastShiftsWithTimesheets
+type ListArgs = any;
+
 export const listPastShiftsWithTimesheets = async ({
   viewer,
   page,
@@ -1286,8 +1289,8 @@ export const getTrainerShiftSummary = async ({ viewer, trainerId }: Args) => {
       .exec();
     if (!me) throw new NotFoundError("Trainer");
     trainerDoc = {
-      _id: new mongoose.Types.ObjectId(me._id),
-      userId: new mongoose.Types.ObjectId(me.userId),
+      _id: new mongoose.Types.ObjectId(String(me._id)), // TODO: tighten Trainer lean typings
+      userId: new mongoose.Types.ObjectId(String(me.userId)),
     };
   } else if (viewer.role === "ADMIN") {
     if (!trainerId) throw new AppError("trainerId is required for admins", 400);
@@ -1305,8 +1308,8 @@ export const getTrainerShiftSummary = async ({ viewer, trainerId }: Args) => {
     if (!t) throw new NotFoundError("Trainer");
 
     trainerDoc = {
-      _id: new mongoose.Types.ObjectId(t._id),
-      userId: new mongoose.Types.ObjectId(t.userId),
+      _id: new mongoose.Types.ObjectId(String(t._id)), // TODO: tighten Trainer lean typings
+      userId: new mongoose.Types.ObjectId(String(t.userId)),
     };
   } else {
     throw new AppError("Forbidden", 403);
