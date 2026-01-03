@@ -61,6 +61,15 @@ app.use((req, res) => {
 // Global error handler
 app.use(errorHandler);
 
+// TODO: replace with structured logger (winston/pino) for production
+process.on("unhandledRejection", (reason) => {
+  console.error("[UNHANDLED_REJECTION]", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("[UNCAUGHT_EXCEPTION]", err);
+});
+
 // Start server
 app.listen(ENV.PORT, () => {
   console.log(`⚡️ Server running in ${ENV.NODE_ENV} on http://localhost:${ENV.PORT}`);
